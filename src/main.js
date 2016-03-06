@@ -193,9 +193,6 @@ export default class App extends React.Component {
 		}
 
 	}
-	replayGame() {
-
-	}
 	unselectBall() {
 		let selected = this.state.selectedBall;
 		if (!selected) return;
@@ -562,9 +559,6 @@ export default class App extends React.Component {
 			animate();
 		}
 		
-	}
-	removeLine() {
-
 	}
 	getFreeTiles(reservedTiles) {
 		return this.state.tiles.filter((t) => {
