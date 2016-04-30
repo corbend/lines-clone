@@ -566,15 +566,15 @@ export default class App extends React.Component {
 		})
 	}
 	nextTurn(forceColors) {
-
+		//generate next balls pack
 		let nextBalls = [];
 		//for store not repeating tiles
 		let reservedTiles = [];
 		let unocuppyTiles = this.getFreeTiles(reservedTiles);
 		let emptyTilesCount = 3;
-		if (unocuppyTiles.length < 3) {
-			emptyTilesCount = unocuppyTiles.length;
-		}
+		// if (unocuppyTiles.length < emptyTilesCount) {
+		// 	emptyTilesCount = unocuppyTiles.length;
+		// }
 		for (let b = 0; b < emptyTilesCount; b++) {
 
 			let color;
@@ -586,24 +586,24 @@ export default class App extends React.Component {
 			}
 
 			unocuppyTiles = this.getFreeTiles(reservedTiles);
-			//console.log("empty tiles", unocuppyTiles.length);
-			let tile = this.shuffleFY(unocuppyTiles)[0];
-			reservedTiles.push(tile);
-			let index = tile.idx;
 
-			//console.log(unocuppyTiles.length, color, tile);
 			let next = {
-				idx: index,
 				color: color,
-				image: color.img,
-				x: ((index - 1) % this.fieldSize),
-				y: (Math.floor((index - 1) / this.fieldSize)),
+				image: color.img,				
 				size: this.tileSize
+			}
+			//set position only if has empty tiles
+			//this is for showing all 3 balls in next ball frame
+			if (unocuppyTiles.length > 0) {
+				let tile = this.shuffleFY(unocuppyTiles)[0];
+				reservedTiles.push(tile);
+				let index = tile.idx;
+				next.idx = index;
+				next.x = ((index - 1) % this.fieldSize);
+				next.y = (Math.floor((index - 1) / this.fieldSize));
 			}
 
 			nextBalls.push(next);
-			
-			//console.log("next ball", next);
 		}
 
 		if (nextBalls.length == 0 || (this.state.tiles.length - this.state.balls.length) == 0) {
@@ -614,7 +614,6 @@ export default class App extends React.Component {
 	}
 	setScreenLock(value) {
 		if (value != this.screenLock) {
-			//console.log("screen - " + (value ? "LOCK": "UNLOCK"));
 			this.screenLock = value;
 		}
 	}
@@ -637,7 +636,9 @@ export default class App extends React.Component {
 	}
 	addNewBalls(stateParams) {
 
-		let nextBalls = this.nextTurn();
+		let nextBalls = this.nextTurn().filter(b=>{
+			return typeof(b.x) != "undefined" && typeof(b.y) != "undefined"
+		});
 		stateParams = stateParams || {};
 
 		if (!nextBalls || nextBalls.length == 0) {
@@ -651,7 +652,7 @@ export default class App extends React.Component {
 			nextBalls.push(sb);
 		}	
 
-		//add new portion of fresh balls
+		//add new portion of fresh balls (if position is empty this is an illegal ball)
 		nextBalls.forEach((nb)=> {		
 			this.getBallTile(nb).occupy = true;
 		});
@@ -663,7 +664,6 @@ export default class App extends React.Component {
 		return nextBalls;
 	}
 	changeState() {
-		//console.log("SWITCH STATE ---->", stateParams, this.state);
 		//when no balls left for checking, change game state
 		let failCondition = this.state.balls.length >= (this.fieldSize * this.fieldSize);
 		if (failCondition) {
@@ -690,13 +690,14 @@ export default class App extends React.Component {
 			if (setNextLine) {				
 				let forceGetColors = true;
 				//get only colors, not positions
+				//show all balls regardless to empty tiles
 				newState.nextLine = this.nextTurn(forceGetColors);
-				//get new balls 
-				newState.balls = newState.balls.concat(this.addNewBalls());			
+				//get new balls (add only for empty tiles)
+				newState.balls = newState.balls.concat(this.addNewBalls());
 			}
 
 			this.setState(newState);
-				
+
 			this.checkRemoveAndNext(this.state.balls, (gainPoints) => {
 				let currentScore = this.state.scores + gainPoints;
 				this.setScreenLock(false);
@@ -732,21 +733,21 @@ export default class App extends React.Component {
 		this.changeState();
 	}
 	renderNextLineBlock(className) {
-		if (this.state.nextLine.length > 0) {			
+		if (this.state.nextLine.length > 0) {
 			let cls = ["next-line", className];
+			let nextBallsEl = this.state.nextLine.map((nextBall, index) => {
+				return (
+					<div key={index} className="ball bordered">
+						<img key={index} src={'img/' + nextBall.image}/>
+					</div>
+				)
+			})
+
 			return (
 				<div className={cls.join(" ")}>
 					<div className="next-balls">
 						<h4>NEXT</h4>
-						<div className="ball bordered">
-							<img src={'img/' + this.state.nextLine[0].image}/>
-						</div>
-						<div className="ball bordered">
-							<img src={'img/' + this.state.nextLine[1].image}/>
-						</div>
-						<div className="ball bordered">
-							<img src={'img/' + this.state.nextLine[2].image}/>
-						</div>
+						{nextBallsEl}
 					</div>
 					<div className="delimeter"></div>
 					<div className="balls-counter">
@@ -837,7 +838,7 @@ export default class App extends React.Component {
 
 		if (this.state.end && !this.state.reset) {
 			stateScreen = (
-				<h1 className="end-title">Game finished!</h1>
+				<h1 className="end-title">Game finished!<br></br>Please press Reset button to start new game!</h1>
 			);
 		}
 
